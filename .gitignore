@@ -82,15 +82,14 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-.myenv
 .env
 .venv
-myenv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+.tox/
 
 # Spyder project settings
 .spyderproject
@@ -107,3 +106,26 @@ venv.bak/
 
 # pycharm
 .idea/
+
+# OSX
+.DS_Store
+
+# all logs
+logs/
+
+# training data
+packages/gradient_boosting_model/gradient_boosting_model/datasets/*.csv
+packages/gradient_boosting_model/gradient_boosting_model/datasets/*.txt
+packages/gradient_boosting_model/gradient_boosting_model/datasets/*.zip
+houseprice.csv
+train.csv
+test.csv
+!/packages/gradient_boosting_model/gradient_boosting_model/datasets/.gitkeep
+
+# trained models
+packages/gradient_boosting_model/gradient_boosting_model/trained_models/*.pkl
+*.h5
+
+# differential test artifacts
+packages/ml_api/differential_tests/expected_results/
+packages/ml_api/differential_tests/actual_results/
