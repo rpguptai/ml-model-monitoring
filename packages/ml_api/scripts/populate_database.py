@@ -1,15 +1,13 @@
-from gradient_boosting_model.processing.data_management import load_dataset
-from gradient_boosting_model.config.core import config
-import requests
-import pandas as pd
-
-from random import randint
-from itertools import islice
-import json
+import argparse
 import os
-import typing as t
 import time
+import typing as t
+from random import randint, choice
 
+import pandas as pd
+import requests
+from gradient_boosting_model.config.core import config
+from gradient_boosting_model.processing.data_management import load_dataset
 
 LOCAL_URL = f'http://{os.getenv("DB_HOST", "localhost")}:5000'
 
@@ -21,12 +19,19 @@ FIRST_FLR_SF_MAP = {"min": 407, "max": 5095}
 
 SECOND_FLR_SF_MAP = {"min": 0, "max": 1862}
 
+BSMT_QUAL_VALUES = ('Gd', 'TA', 'Ex', 'Fa')
+
 
 def _generate_random_int(value: int, value_ranges: t.Mapping) -> int:
     """Generate random integer within a min and max range."""
     random_value = randint(value_ranges["min"], value_ranges["max"])
-
     return int(random_value)
+
+
+def _select_random_category(value: str, value_options: t.Sequence) -> str:
+    """Select random category given a sequence of categories."""
+    random_category = choice(value_options)
+    return random_category
 
 
 def _prepare_inputs(dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -45,10 +50,14 @@ def _prepare_inputs(dataframe: pd.DataFrame) -> pd.DataFrame:
         _generate_random_int, value_ranges=LOT_AREA_MAP
     )
 
+    clean_inputs_df.loc[:, "BsmtQual"] = clean_inputs_df["BsmtQual"].apply(
+        _select_random_category, value_options=BSMT_QUAL_VALUES
+    )
+
     return clean_inputs_df
 
 
-def populate_database(n_predictions: int = 500) -> None:
+def populate_database(n_predictions: int = 500, anomaly: bool = False) -> None:
     """
     Manipulate the test data to generate random
     predictions and save them to the database.
@@ -68,8 +77,19 @@ def populate_database(n_predictions: int = 500) -> None:
             "extend the script to handle more predictions."
         )
 
+    if anomaly:
+        # set extremely low values to generate an outlier
+        n_predictions = 1
+        clean_inputs_df.loc[:, "FirstFlrSF"] = 1
+        clean_inputs_df.loc[:, "LotArea"] = 1
+        clean_inputs_df.loc[:, "OverallQual"] = 1
+        clean_inputs_df.loc[:, "GrLivArea"] = 1
+
+    clean_inputs_df = clean_inputs_df.where(pd.notnull(clean_inputs_df), None)
     for index, data in clean_inputs_df.iterrows():
         if index > n_predictions:
+            if anomaly:
+                print('Created 1 anomaly')
             break
 
         response = requests.post(
@@ -89,4 +109,13 @@ def populate_database(n_predictions: int = 500) -> None:
 
 
 if __name__ == "__main__":
-    populate_database(n_predictions=500)
+    anomaly = False
+    parser = argparse.ArgumentParser(
+        description='Send random requests to House Price API.')
+    parser.add_argument('--anomaly', help="generate unusual inputs")
+    args = parser.parse_args()
+    if args.anomaly:
+        print("Generating unusual inputs")
+        anomaly = True
+
+    populate_database(n_predictions=500, anomaly=anomaly)

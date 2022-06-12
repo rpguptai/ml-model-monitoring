@@ -2,9 +2,9 @@ import logging
 import os
 import pathlib
 import sys
+from logging.config import fileConfig
 
 import api
-
 
 # logging format
 FORMATTER = logging.Formatter(
@@ -13,6 +13,8 @@ FORMATTER = logging.Formatter(
 
 # Project Directories
 ROOT = pathlib.Path(api.__file__).resolve().parent.parent
+
+APP_NAME = 'ml_api'
 
 
 class Config:
@@ -80,10 +82,9 @@ def get_console_handler():
 def setup_app_logging(config: Config) -> None:
     """Prepare custom logging for our application."""
     _disable_irrelevant_loggers()
-    root = logging.getLogger()
-    root.setLevel(config.LOGGING_LEVEL)
-    root.addHandler(get_console_handler())
-    root.propagate = False
+    fileConfig(ROOT / 'gunicorn_logging.conf')
+    logger = logging.getLogger('mlapi')
+    logger.setLevel(config.LOGGING_LEVEL)
 
 
 def _disable_irrelevant_loggers() -> None:

@@ -25,6 +25,16 @@ run-service-development:
 	@echo "+ $@"
 	python run.py
 
+run-service-wsgi:
+	@echo "+ $@"
+	gunicorn --bind 0.0.0.0:5000 \
+			 --workers=1 \
+			 --log-config gunicorn_logging.conf \
+             --log-level=DEBUG \
+             --access-logfile=- \
+             --error-logfile=- \
+             run:application
+
 db-migrations:
 	@echo "+ $@"
 	PYTHONPATH=. alembic -c alembic.ini upgrade head
